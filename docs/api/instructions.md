@@ -153,6 +153,7 @@ pub fn discriminator(&self) -> u8 {
 | 37 | SetPoolPublishAppendRate |
 | 38 | InitializeConfig |
 | 39 | InitializeUserAccount |
+| 40 | InitializePoolList |
 
 ---
 
@@ -160,7 +161,6 @@ pub fn discriminator(&self) -> u8 {
 
 | Discriminator | Instruction |
 |--------------|-------------|
-| 42 | GetAccountInfo |
 | 43 | GetPosition |
 | 44 | GetOrder |
 | 45 | GetLimitedOrder |

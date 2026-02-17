@@ -145,6 +145,113 @@ const config = ConfigKeepersSchema.decode(accountInfo.data);
 
 ---
 
+## PoolList
+
+### PDA
+
+```
+["pool_list"]
+```
+
+### Purpose
+
+Global registry of all initialized settlement-token pools.
+
+Stores:
+
+- `is_initialized: bool`
+- `pools: Vec<PoolEntry>`
+  - `token_mint: PublicKey`
+  - `pool_address: PublicKey`
+- `bump: u8`
+
+Each entry represents:
+
+```
+Settlement Token Mint → Pool PDA
+```
+
+This allows clients to:
+
+- Discover all existing pools
+- Map settlement token → pool address
+- Validate whether a pool exists before attempting initialization
+- Build UI lists of supported settlement tokens
+
+---
+
+### Query Example
+
+```ts
+const [poolListPDA] = findPoolListAddress(PROGRAM_ID);
+
+const accountInfo = await connection.getAccountInfo(poolListPDA);
+if (!accountInfo) throw new Error("PoolList not found");
+
+const data = accountInfo.data;
+
+// Manual decoding (matches on-chain layout)
+
+const isInitialized = data[0] === 1;
+const poolsVecLength = data.readUInt32LE(1);
+
+const pools: {
+  tokenMint: PublicKey;
+  poolAddress: PublicKey;
+}[] = [];
+
+let offset = 5; // 1 byte (is_initialized) + 4 bytes (vec length)
+
+for (let i = 0; i < poolsVecLength; i++) {
+  const tokenMintBytes = data.slice(offset, offset + 32);
+  const tokenMint = new PublicKey(tokenMintBytes);
+  offset += 32;
+
+  const poolAddressBytes = data.slice(offset, offset + 32);
+  const poolAddress = new PublicKey(poolAddressBytes);
+  offset += 32;
+
+  pools.push({ tokenMint, poolAddress });
+}
+
+console.log({
+  isInitialized,
+  totalPools: poolsVecLength,
+  pools,
+});
+```
+
+---
+
+### Returned Structure
+
+Logical representation:
+
+```
+{
+  is_initialized: bool,
+  pools: [
+    {
+      token_mint: PublicKey,
+      pool_address: PublicKey
+    }
+  ],
+  bump: u8
+}
+```
+
+---
+
+### Notes
+
+- Vector length is stored as `u32` (little-endian).
+- Each pool entry occupies **64 bytes** (32 + 32).
+- Total size grows dynamically as pools are added.
+- This account is required for deterministic discovery of settlement-token pools.
+- Always check `is_initialized === true` before reading entries.
+
+---
+
 # Trading Data Queries
 
 Trading data is user-specific.

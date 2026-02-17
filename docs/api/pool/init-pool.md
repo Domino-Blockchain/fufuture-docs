@@ -30,23 +30,43 @@ The pool system consists of **1 main PDA + 7 auxiliary PDAs**.
 
 ---
 
+## 0️⃣ PoolList PDA
+
+Stores all initialized settlement-token pools.
+
+```
+["pool_list"]
+```
+
+```ts
+function findPoolListAddress(
+  programId: PublicKey
+): [PublicKey, number] {
+  return PublicKey.findProgramAddressSync(
+    [Buffer.from('pool_list')],
+    programId
+  );
+}
+```
+
+---
+
+
 ## 1️⃣ Pool PDA
 
 ```
-["pool", token_mint, underlying_name]
+["pool", token_mint]
 ```
 
 ```ts
 function findPoolAddress(
   programId: PublicKey,
   tokenMint: PublicKey,
-  underlyingName: string
 ): [PublicKey, number] {
   return PublicKey.findProgramAddressSync(
     [
       Buffer.from('pool'),
-      tokenMint.toBuffer(),
-      Buffer.from(underlyingName, 'utf-8')
+      tokenMint.toBuffer()
     ],
     programId
   );
@@ -122,21 +142,22 @@ Each auxiliary account is derived from the pool PDA.
 | Index | Account | Signer | Writable |
 |--------|----------|----------|-----------|
 | 0 | Authority (payer) | ✅ | ✅ |
-| 1 | Pool PDA | ❌ | ✅ |
-| 2 | Makers PDA | ❌ | ✅ |
-| 3 | LiquidityMarkets PDA | ❌ | ✅ |
-| 4 | MatchIds PDA | ❌ | ✅ |
-| 5 | ShareHolders PDA | ❌ | ✅ |
-| 6 | UserDeals PDA | ❌ | ✅ |
-| 7 | Positions PDA | ❌ | ✅ |
-| 8 | Keepers PDA | ❌ | ✅ |
-| 9 | Token Mint | ❌ | ❌ |
-| 10 | Risk Fund | ❌ | ❌ |
-| 11 | Program ID | ❌ | ❌ |
+| 1 | PoolList PDA | ❌ | ✅ |
+| 2 | Pool PDA | ❌ | ✅ |
+| 3 | Makers PDA | ❌ | ✅ |
+| 4 | LiquidityMarkets PDA | ❌ | ✅ |
+| 5 | MatchIds PDA | ❌ | ✅ |
+| 6 | ShareHolders PDA | ❌ | ✅ |
+| 7 | UserDeals PDA | ❌ | ✅ |
+| 8 | Positions PDA | ❌ | ✅ |
+| 9 | Keepers PDA | ❌ | ✅ |
+| 10 | Token Mint | ❌ | ❌ |
+| 11 | Risk Fund | ❌ | ❌ |
 | 12 | Program ID | ❌ | ❌ |
 | 13 | Program ID | ❌ | ❌ |
-| 14 | System Program | ❌ | ❌ |
-| 15 | Rent Sysvar | ❌ | ❌ |
+| 14 | Program ID | ❌ | ❌ |
+| 15 | System Program | ❌ | ❌ |
+| 16 | Rent Sysvar | ❌ | ❌ |
 
 ⚠️ **Account ordering must match exactly.**
 
@@ -146,8 +167,6 @@ Each auxiliary account is derived from the pool PDA.
 
 ```
 u8      discriminator (19)
-u32     underlying_name length
-bytes   underlying_name
 Pubkey  risk_fund
 u8      token_decimals
 ```
@@ -160,22 +179,16 @@ u8      token_decimals
 function createInitializePublicPoolInstruction(
   programId: PublicKey,
   authority: PublicKey,
+  poolListPda: PublicKey,
   poolPda: PublicKey,
   poolPdas: PoolPDAs,
   tokenMint: PublicKey,
   riskFund: PublicKey,
-  underlyingName: string,
   tokenDecimals: number
 ): TransactionInstruction {
 
-  const nameBytes = Buffer.from(underlyingName, 'utf-8');
-  const nameLengthBuffer = Buffer.alloc(4);
-  nameLengthBuffer.writeUInt32LE(nameBytes.length, 0);
-
   const data = Buffer.concat([
     Buffer.from([19]),
-    nameLengthBuffer,
-    nameBytes,
     riskFund.toBuffer(),
     Buffer.from([tokenDecimals]),
   ]);
@@ -183,6 +196,7 @@ function createInitializePublicPoolInstruction(
   return new TransactionInstruction({
     keys: [
       { pubkey: authority, isSigner: true, isWritable: true },
+      { pubkey: poolListPda, isSigner: false, isWritable: true },
       { pubkey: poolPda, isSigner: false, isWritable: true },
       { pubkey: poolPdas.makers, isSigner: false, isWritable: true },
       { pubkey: poolPdas.liquidityMarkets, isSigner: false, isWritable: true },

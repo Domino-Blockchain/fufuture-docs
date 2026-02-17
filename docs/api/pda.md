@@ -165,14 +165,25 @@ export function findLimitOrderAddress(
 export function findPoolAddress(
   programId: PublicKey,
   tokenMint: PublicKey,
-  underlyingName: string
 ): [PublicKey, number] {
   return PublicKey.findProgramAddressSync(
     [
       Buffer.from('pool'),
-      tokenMint.toBuffer(),
-      Buffer.from(underlyingName)
+      tokenMint.toBuffer()
     ],
+    programId
+  );
+}
+```
+
+#### Pool List PDA
+
+```ts
+export function findPoolListAddress(
+  programId: PublicKey,
+): [PublicKey, number] {
+  return PublicKey.findProgramAddressSync(
+    [Buffer.from('pool_list')],
     programId
   );
 }
