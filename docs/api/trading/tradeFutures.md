@@ -40,75 +40,88 @@ function writeU128LE(value: string): Buffer {
 
 ```ts
 function createTradeFuturesInstruction(
-  programId: PublicKey,
-  keeper: PublicKey,
-  taker: PublicKey,
-  userAccountPda: PublicKey,
-  assetPda: PublicKey,
-  poolPda: PublicKey,
-  poolPdas: PoolPDAs,
-  configPda: PublicKey,
-  orderbookState: PublicKey,
-  currentDealId: number,
-  pair: string,
-  amount: string,
-  price: string,
-  orderType: number,
-  direction: number,
-  goodTill: string,
-  rewardGas: string
+    programId: PublicKey,
+    keeper: PublicKey,
+    taker: PublicKey,
+    userAccountPda: PublicKey,
+    assetPda: PublicKey,
+    poolPda: PublicKey,
+    poolPdas: PoolPDAs,
+    configPda: PublicKey,
+    orderbookState: PublicKey,
+    currentOrderCount: bigint,
+    pair: string,
+    amount: string,
+    price: string,
+    orderType: number,
+    direction: number,
+    goodTill: string,
+    rewardGas: string,
+    existingDealIds: bigint[] = []
 ): TransactionInstruction {
+    const pairBytes = Buffer.from(pair, 'utf-8');
+    const pairLengthBuffer = Buffer.alloc(4);
+    pairLengthBuffer.writeUInt32LE(pairBytes.length, 0);
 
-  const pairBytes = Buffer.from(pair, 'utf-8');
-  const pairLengthBuffer = Buffer.alloc(4);
-  pairLengthBuffer.writeUInt32LE(pairBytes.length, 0);
+    const goodTillBuf = Buffer.alloc(8);
+    goodTillBuf.writeBigInt64LE(BigInt(goodTill), 0);
 
-  const goodTillBuf = Buffer.alloc(8);
-  goodTillBuf.writeBigInt64LE(BigInt(goodTill), 0);
+    const rewardGasBuf = Buffer.alloc(8);
+    rewardGasBuf.writeBigUInt64LE(BigInt(rewardGas), 0);
 
-  const rewardGasBuf = Buffer.alloc(8);
-  rewardGasBuf.writeBigUInt64LE(BigInt(rewardGas), 0);
+    const data = Buffer.concat([
+        Buffer.from([TRADE_FUTURES_TAG]),
+        pairLengthBuffer,
+        pairBytes,
+        writeU128LE(amount),
+        writeU128LE(price),
+        Buffer.from([orderType]),
+        Buffer.from([direction]),
+        goodTillBuf,
+        taker.toBuffer(),
+        rewardGasBuf,
+    ]);
 
-  const data = Buffer.concat([
-    Buffer.from([TRADE_FUTURES_TAG]),
-    pairLengthBuffer,
-    pairBytes,
-    writeU128LE(amount),
-    writeU128LE(price),
-    Buffer.from([orderType]),
-    Buffer.from([direction]),
-    goodTillBuf,
-    taker.toBuffer(),
-    rewardGasBuf,
-  ]);
+    const [dealPda] = findDealAddress(programId, currentOrderCount);
+    const [positionPda] = findPositionAddress(programId, taker, pair, direction);
 
-  const [dealPda] = findDealAddress(programId, currentDealId);
-  const [positionPda] = findPositionAddress(programId, taker, pair, direction);
+    console.log(`\nTradeFutures PDA Debug:`);
+    console.log(`  Deal PDA (order_count=${currentOrderCount}): ${dealPda.toBase58()}`);
+    console.log(`  Position PDA: ${positionPda.toBase58()}`);
+    if (existingDealIds.length > 0) {
+        console.log(`  Appending ${existingDealIds.length} existing deal PDAs: [${existingDealIds.join(', ')}]`);
+    }
 
-  return new TransactionInstruction({
-    keys: [
-      { pubkey: keeper, isSigner: true, isWritable: true },               // 0
-      { pubkey: assetPda, isSigner: false, isWritable: false },           // 1
-      { pubkey: configPda, isSigner: false, isWritable: true },           // 2
-      { pubkey: taker, isSigner: false, isWritable: false },              // 3
-      { pubkey: userAccountPda, isSigner: false, isWritable: true },      // 4
-      { pubkey: poolPda, isSigner: false, isWritable: true },             // 5
-      { pubkey: poolPdas.makers, isSigner: false, isWritable: true },     // 6
-      { pubkey: poolPdas.liquidityMarkets, isSigner: false, isWritable: true }, // 7
-      { pubkey: poolPdas.positions, isSigner: false, isWritable: true },  // 8
-      { pubkey: poolPdas.userDeals, isSigner: false, isWritable: true },  // 9
-      { pubkey: orderbookState, isSigner: false, isWritable: true },      // 10
-      { pubkey: dealPda, isSigner: false, isWritable: true },             // 11
-      { pubkey: positionPda, isSigner: false, isWritable: true },         // 12
-      { pubkey: SystemProgram.programId, isSigner: false, isWritable: false }, // 13
-      { pubkey: SYSVAR_RENT_PUBKEY, isSigner: false, isWritable: false }, // 14
-      { pubkey: SYSVAR_CLOCK_PUBKEY, isSigner: false, isWritable: false }, // 15
-      { pubkey: poolPdas.matchIds, isSigner: false, isWritable: true },   // 16
-      { pubkey: poolPdas.keepers, isSigner: false, isWritable: false },   // 17
-    ],
-    programId,
-    data,
-  });
+    return new TransactionInstruction({
+        keys: [
+            {pubkey: keeper, isSigner: true, isWritable: true},              // 0
+            {pubkey: assetPda, isSigner: false, isWritable: false},          // 1
+            {pubkey: configPda, isSigner: false, isWritable: true},          // 2
+            {pubkey: taker, isSigner: false, isWritable: false},             // 3
+            {pubkey: userAccountPda, isSigner: false, isWritable: true},     // 4
+            {pubkey: poolPda, isSigner: false, isWritable: true},            // 5
+            {pubkey: poolPdas.makers, isSigner: false, isWritable: true},    // 6
+            {pubkey: poolPdas.liquidityMarkets, isSigner: false, isWritable: true}, // 7
+            {pubkey: poolPdas.positions, isSigner: false, isWritable: true}, // 8
+            {pubkey: poolPdas.userDeals, isSigner: false, isWritable: true}, // 9
+            {pubkey: orderbookState, isSigner: false, isWritable: true},     // 10
+            {pubkey: dealPda, isSigner: false, isWritable: true},            // 11
+            {pubkey: positionPda, isSigner: false, isWritable: true},        // 12
+            {pubkey: SystemProgram.programId, isSigner: false, isWritable: false}, // 13
+            {pubkey: SYSVAR_RENT_PUBKEY, isSigner: false, isWritable: false},      // 14
+            {pubkey: SYSVAR_CLOCK_PUBKEY, isSigner: false, isWritable: false},     // 15
+            {pubkey: poolPdas.matchIds, isSigner: false, isWritable: true},  // 16
+            {pubkey: poolPdas.keepers, isSigner: false, isWritable: false},  // 17
+            // Existing deal PDAs for sort_and_insert_deal (accounts[18+])
+            ...existingDealIds.map(id => ({
+                pubkey: findDealAddress(programId, id)[0],
+                isSigner: false,
+                isWritable: false,
+            })),
+        ],
+        programId,
+        data,
+    });
 }
 ```
 
@@ -138,10 +151,86 @@ The account order must match the Rust `open_order` / `trade_futures` processor e
 | 15    | clock sysvar          |
 | 16    | match ids PDA         |
 | 17    | keepers PDA           |
+| 18+   | existing deal PDAs (RO) |
+
 
 If the order differs, deserialization will fail or produce invalid bool / UnsupportedAsset errors.
 
 ---
+
+## Helper
+
+When opening a new order on an existing position:
+
+1. Fetch the Position PDA.
+
+2. Parse its deals: Vec field.
+
+3. Pass those deal IDs to createTradeFuturesInstruction.
+
+Example helper:
+
+```ts
+async function getPositionDealIds(
+    connection: Connection,
+    programId: PublicKey,
+    taker: PublicKey,
+    pair: string,
+    direction: number
+): Promise<bigint[]> {
+    const [positionPda] = findPositionAddress(programId, taker, pair, direction);
+    const accountInfo = await connection.getAccountInfo(positionPda);
+    if (!accountInfo) return []; // No position yet
+
+    try {
+        // Position Borsh layout:
+        // is_initialized: 1
+        // user: 32
+        // pair: 4 + N (string)
+        // direction: 1
+        // value: 16
+        // size: 16
+        // margin: 16
+        // freeze: 16
+        // deals: 4 (vec length) + 8 * count (u64 each)
+        // bump: 1
+        const data = accountInfo.data;
+        let offset = 0;
+        
+        offset += 1; // is_initialized
+        offset += 32; // user pubkey
+        
+        // Read pair string (4-byte length prefix)
+        const pairLen = data.readUInt32LE(offset);
+        offset += 4 + pairLen;
+        
+        offset += 1;  // direction
+        offset += 16; // value
+        offset += 16; // size
+        offset += 16; // margin
+        offset += 16; // freeze
+        
+        // Read deals vec
+        const dealsCount = data.readUInt32LE(offset);
+        offset += 4;
+        
+        const dealIds: bigint[] = [];
+        for (let i = 0; i < dealsCount; i++) {
+            const dealId = data.readBigUInt64LE(offset);
+            offset += 8;
+            dealIds.push(dealId);
+        }
+        
+        console.log(`  Existing position deals: [${dealIds.join(', ')}]`);
+        return dealIds;
+    } catch (e) {
+        console.warn('Failed to parse position deal IDs:', e);
+        return [];
+    }
+}
+```
+
+This reads the Vec from the Position account and returns deal IDs that must be appended as remaining accounts.
 
 ## Data Layout (Binary Encoding)    
 
