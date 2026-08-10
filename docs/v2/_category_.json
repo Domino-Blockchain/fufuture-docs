@@ -1,0 +1,8 @@
+{
+  "label": "Domi V2 (Parity Lane)",
+  "position": 5,
+  "link": {
+    "type": "generated-index",
+    "description": "Interface reference for the Domi V2 parity lane (instruction tags 60-107, domi_v2 PDA namespace, V2 error codes and events)."
+  }
+}
