@@ -158,6 +158,29 @@ If the order differs, deserialization will fail or produce invalid bool / Unsupp
 
 ---
 
+## Token Routing Security Contract
+
+The Batch 1 fund-loss hardening does not change instruction data, account count,
+or account order. Any open-order path that reaches pool matching must now satisfy
+all of the following bindings before protocol state is mutated:
+
+- the token program is the canonical SPL Token Program;
+- the token mint is a valid SPL Mint and equals the pool's `token_address`;
+- the pool vault is an SPL Token Account for that mint whose token authority is
+  the program `['authority']` PDA;
+- the risk-fund account is the exact SPL Token Account stored in
+  `pool.risk_fund_addr`, has the same mint and program authority, and is distinct
+  from the pool vault;
+- when the fee-vault PDA is supplied, it is also an SPL Token Account for the
+  pool mint under the program authority.
+
+The same pool-vault, risk-fund, mint, program-authority, and token-program
+contract applies to `ClosePosition` / trigger-close settlement. Clients must not
+derive `ATA(pool.risk_fund_addr, mint)`: `risk_fund_addr` already is the exact
+dedicated token-account public key.
+
+---
+
 ## Helper
 
 When opening a new order on an existing position:

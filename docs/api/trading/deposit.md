@@ -42,6 +42,19 @@ Collateral is written as `u128` in **E18 precision format**.
 
 ---
 
+## Security Constraints
+
+- Account 4 must be the real SPL Token Program.
+- Account 6 must be a real SPL mint.
+- Account 1 must be the canonical program-owned UserAccount PDA for
+  `(trader, token mint)`, and its stored user must equal the signer.
+- Account 5 must be the canonical program-owned ConfigCore PDA.
+- Account 3 must be an SPL token account for account 6 whose token authority
+  is the program `["authority"]` PDA.
+
+Caller-owned or otherwise stand-in vaults are rejected before the transfer and
+cannot be used to create protocol collateral from a self-transfer.
+
 # Instruction Data Layout
 
 ```

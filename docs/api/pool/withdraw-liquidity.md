@@ -46,6 +46,14 @@ This is the reverse operation of `AddPublicLiquidity`.
 
 ---
 
+## Security Constraints
+
+- The token-program account must be the real SPL Token Program.
+- The pool and Makers accounts must be canonical program-owned accounts.
+- The pool vault must use the pool settlement mint and program
+  `["authority"]` PDA as token authority.
+- The supplied program authority must equal the same `["authority"]` PDA.
+
 # Instruction Data Layout
 
 ```

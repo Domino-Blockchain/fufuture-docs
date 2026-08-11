@@ -45,6 +45,15 @@ If the trader has open positions, the withdraw logic must validate margin health
 
 ---
 
+## Security Constraints
+
+- Account 4 must be the real SPL Token Program and account 6 a real SPL mint.
+- Account 2 must be an SPL token account for account 6 whose token authority
+  is the program `["authority"]` PDA.
+- Account 1 must be the canonical UserAccount PDA owned by the program and
+  bound to the signer.
+- Account 5 must equal the program `["authority"]` PDA.
+
 # Instruction Data Layout
 
 ```

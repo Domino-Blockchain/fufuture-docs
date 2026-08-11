@@ -56,6 +56,16 @@ You will need:
 
 ---
 
+## Security Constraints
+
+- The final account must be the real SPL Token Program.
+- The pool and Makers accounts must be the canonical program-owned accounts.
+- The pool vault must be owned by the SPL Token Program, use the pool's
+  settlement mint, and have the program `["authority"]` PDA as token authority.
+
+A caller-supplied program that reports a successful CPI without moving tokens
+is rejected before LP shares are credited.
+
 # Instruction Data Layout
 
 ```

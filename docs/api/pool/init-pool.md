@@ -163,6 +163,23 @@ Each auxiliary account is derived from the pool PDA.
 
 ---
 
+## Risk Fund Account Contract
+
+`risk_fund` is the public key of the **exact SPL Token Account stored in the
+pool state**. It is not a wallet address and clients must not derive
+`ATA(risk_fund, token_mint)`.
+
+Before initializing a pool, create a dedicated token account whose:
+
+- outer account owner is the SPL Token Program;
+- mint is the pool settlement mint;
+- token authority is the program `["authority"]` PDA;
+- address is different from the pool vault.
+
+Pass that token account public key at account index 11 and in the instruction
+data. Open/close and fee-routing instructions must later pass the same exact
+account.
+
 # Instruction Data Layout
 
 ```
