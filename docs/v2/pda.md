@@ -47,7 +47,10 @@ from `src/v2/pda.rs`; layouts from `src/v2/state.rs`.
 
 Notes:
 
-- `mint` is always the **settlement SPL mint**; every settlement-scoped PDA includes it.
+- `mint` is always a **classic SPL Token mint** owned by Domichain's canonical
+  `spl_token` program (`TokenAAGbeQq5tGW2r5RoR3oauzN2EkNFiHNPw9q34s`);
+  Token-2022 mints are not supported. Every
+  settlement-scoped PDA includes it.
 - The **custody** PDA is an SPL token account (owner = SPL token program) whose token
   authority is the **custody-authority** PDA; the program signs payouts with
   `invoke_signed` over `["domi_v2", "custody-auth", mint, bump]`

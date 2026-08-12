@@ -253,6 +253,9 @@ client_checklist:
 | 105 | LiquidateMakerDealsBulkV2 | keeper | **no** |
 | 106 | DepositRiskFundV2 | admin | no |
 | 107 | WithdrawRiskFundV2 | admin | no |
+| 108 | SetProtocolPausedV2 | admin | no |
+| 109 | SetSettlementStatusV2 | admin | no |
+| 110 | UpdateSettlementConfigV2 | admin | no |
 
 \* permissionless = allowed for anyone once `protocol.permissionless_markets()` is
 enabled (`V2PermissionlessDisabled` 420 otherwise).

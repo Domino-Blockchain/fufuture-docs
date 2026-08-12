@@ -811,3 +811,36 @@ custody-authority PDA, SPL token program.
   `risk_fund_equity_base` → `V2InsufficientRiskFund` (461).
 - SPL: deposit = admin → custody; withdraw = custody → admin (custody-authority signed).
 - Events: `RiskFundDeposited` / `RiskFundWithdrawn` (liquidation.rs:1697).
+
+### 108 — SetProtocolPausedV2
+
+Args `SetProtocolPausedV2Args`: `paused: bool`.
+
+Accounts: `admin` [signer], `protocol` PDA [writable].
+
+- Permission: **admin**. Pause gate: none; this instruction is the pause/resume control.
+- Event: `ProtocolPausedUpdated` with the old and new values.
+
+### 109 — SetSettlementStatusV2
+
+Args `SetSettlementStatusV2Args`: `status: u8` (`0 = ACTIVE`, `1 = PAUSED`).
+
+Accounts: `admin` [signer], `protocol` PDA, settlement mint, settlement PDA [writable].
+
+- Permission: **admin**. Pause gate: none.
+- Checks: only ACTIVE and PAUSED are accepted; mint and settlement PDA must match.
+- Event: `SettlementStatusUpdated` with the old and new status.
+
+### 110 — UpdateSettlementConfigV2
+
+Args `UpdateSettlementConfigV2Args` is a partial update. Each field is Borsh
+`Option<T>`: `trading_fee_to_platform_e9`, `trading_fee_to_inviter_e9`,
+`trading_fee_to_top_agent_e9`, `maintenance_margin_rate_e9`, and
+`min_deposit_amount`.
+
+Accounts: `admin` [signer], `protocol` PDA, settlement mint, settlement PDA [writable].
+
+- Permission: **admin**. Pause gate: none.
+- Checks: the three fee rates must sum to at most `1e9`; an explicitly supplied
+  settlement maintenance rate must be in `(0, 1e9]`; mint and settlement PDA must match.
+- Event: `SettlementConfigUpdated` with every old/new value.
